@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools", "setuptools_scm[toml]"]
+build-backend = "setuptools.build_meta"
+
+
+
+[tool.setuptools]
+packages=[
+    "agn_pipe"]
+
+[tool.setuptools.package-data]
+agn_pip = ["*.fits"]
+
+[tool.setuptools_scm]
+write_to = "agn_pipe/_version.py"
+
+[project]
+name = "agn_pipe"
+dynamic = ["version"]
+version = "0.0.1"
+description = "Pipeline for AGN analysis"
+readme = "README.md"
+license = { file="LICENSE" }
+
+requires-python = ">=3.9"
+dependencies = [
+    "pyyaml",
+    "numpy",
+    "astropy<6.0.0",
+    "tqdm",
+    "matplotlib",
+    "multiprocess",
+    "gammapy>=1.1",
+    "pydantic<=1.10",
+    "scipy==1.11.4",
+]
+
+[project.optional-dependencies]
+"tests" = [
+    "pytest",
+    "pytest-cov",
+]
+
+[project.urls]
+"documentation" = "https://github.com/steob92/agn_pipe/"
+"repository" = "https://github.com/steob92/agn_pipe/"
+"bug tracker" = "https://github.com/steob92/agn_pipe/issues"
+
+[project.scripts]
