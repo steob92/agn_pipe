@@ -16,7 +16,6 @@ def read_3hwc() -> Table:
     """
 
     fname = path.join(pathlib.Path(__file__).parent.resolve(), "3HWC.fits")
-    print(fname)
     with fits.open(fname) as hdul:
         tab = Table.read(hdul)
     return tab
@@ -45,3 +44,22 @@ def read_starcat() -> Table:
         }
     )
     return star_cat
+
+
+def read_vtscat() -> Table:
+    """Read VTSCat
+
+    Parsed data from:
+    https://github.com/VERITAS-Observatory/VERITAS-VTSCat
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
+
+    fname = path.join(pathlib.Path(__file__).parent.resolve(), "vtscat.fits")
+    with fits.open(fname) as hdul:
+        tab = Table.read(hdul)
+    return tab

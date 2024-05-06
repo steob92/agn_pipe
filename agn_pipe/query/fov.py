@@ -1,9 +1,56 @@
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
-from ..data.catalogs import read_3hwc, read_starcat
+from ..data.catalogs import read_3hwc, read_starcat, read_vtscat
 from astropy import units as u
 from astropy.table import Table
 from typing import Union, Optional
+
+
+def query_vtscat(
+    ra: float, dec: float, search_radius: Union[str, u.Quantity] = "1.5 deg"
+) -> Table:
+    """Query the VTSCat catalog for nearby sources
+
+    Args:
+        ra : Right Acession of the region of interst
+        dec : Declinations of the region of interst
+        search_radius : Query radius. Defaults to 1.5 degrees
+
+    Returns:
+        astropy.table.Table: Table of sources matching search criteria
+
+    Examples:
+        >>> query_vtscat(83.6287, 22.0147)
+        <Table length=2>
+            name         ra         dec
+        str27      float64     float64
+        ----------- ----------- ------------
+        Crab nebula   83.633083      22.0145
+        Crab pulsar 83.63307625 22.014493278
+
+
+    Raises:
+        ValueError: If search_radius is not convertable to degrees
+    """
+
+    try:
+
+        if isinstance(search_radius, str):
+            search_radius = u.Quantity(search_radius).to("deg")
+        else:
+            search_radius = search_radius.to("deg")
+
+    except ValueError as e:
+        raise ValueError(
+            f"Error converting search radius. Make sure unit is correct:\n{e}"
+        )
+
+    tab_vts = read_vtscat()
+    tab_mask = (tab_vts["ra"] - ra) ** 2 + (
+        tab_vts["dec"] - dec
+    ) ** 2 < search_radius.value**2
+
+    return tab_vts[tab_mask]
 
 
 def query_3hwc(
@@ -115,7 +162,7 @@ def get_exclusion_regions(
     search_radius: Union[str, u.Quantity] = "1.5 deg",
     magnitude: Optional[float] = 8.0,
     exclusion: Union[str, u.Quantity] = "0.35 deg",
-) -> List[float, float, float]:
+) -> list[float, float, float]:
     """Get the exclusins regions of the FoV
 
     Args:
@@ -131,6 +178,38 @@ def get_exclusion_regions(
 
     Examples:
         >>> get_exclusion_regions(83.6287, 22.0147)
+        [[83.6279, 22.0243, '0.35 deg'],
+        [83.633083, 22.0145, '0.35 deg'],
+        [83.63307625, 22.014493278, '0.35 deg'],
+        [82.564146, 22.540258, '0.35 deg'],
+        [82.680615, 22.462255, '0.35 deg'],
+        [83.272304, 23.142298, '0.35 deg'],
+        [83.918861, 21.403257, '0.35 deg'],
+        [84.109928, 21.993108, '0.35 deg'],
+        [84.26036, 20.730788, '0.35 deg'],
+        [84.411191, 21.142549, '0.35 deg'],
+        [84.86295, 21.762929, '0.35 deg']]
 
     """
-    pass
+
+    tab_3hwc = query_3hwc(ra, dec, search_radius)
+    tab_vts = query_vtscat(ra, dec, search_radius)
+    tab_starcat = query_starcat(ra, dec, search_radius, magnitude)
+
+    exclusion_regions = []
+
+    for entry in tab_3hwc:
+        # Use the default if the radius is 0 otherwise use the catalog value
+        radius = exclusion if entry["radius"] == 0 else entry["radius"]
+        exclusion_regions.append([entry["ra"], entry["dec"], radius])
+    # todo, vtscat extentions
+    for entry in tab_vts:
+        # Use the default if the radius is 0 otherwise use the catalog value
+        # radius = exclusion if entry["radius"] == 0 else entry["radius"]
+        radius = exclusion
+        exclusion_regions.append([entry["ra"], entry["dec"], radius])
+
+    for entry in tab_starcat:
+        exclusion_regions.append([entry["ra"], entry["dec"], exclusion])
+
+    return exclusion_regions
