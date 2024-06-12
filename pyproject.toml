@@ -12,12 +12,12 @@ packages=[
 agn_pip = ["*.fits"]
 
 [tool.setuptools_scm]
-write_to = "agn_pipe/_version.py"
+write_to = "agn_pipe/__version__.py"
+
 
 [project]
 name = "agn_pipe"
 dynamic = ["version"]
-version = "0.0.1"
 description = "Pipeline for AGN analysis"
 readme = "README.md"
 license = { file="LICENSE" }
@@ -47,3 +47,16 @@ dependencies = [
 "bug tracker" = "https://github.com/steob92/agn_pipe/issues"
 
 [project.scripts]
+
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "$version"
+version_scheme = "semver"
+version_provider = "scm"
+update_changelog_on_bump = true
+changelog_incremental = true
+version_files = [
+    "agn_pipe/__version__.py",
+    "pyproject.toml:version"
+]

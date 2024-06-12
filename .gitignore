@@ -163,3 +163,7 @@ cython_debug/
 
 # fits files
 *.fits.gz
+
+
+# Apptainer
+*.sif

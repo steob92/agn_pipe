@@ -1,0 +1,52 @@
+Bootstrap: docker
+From: ubuntu
+Stage: build
+
+%setup
+
+
+
+%files
+    # Temporay build files
+    ../agn_pipe /opt/agn_pipe
+
+%environment
+    # Port for jupyter lab
+    export JPORT=8000
+    . /opt/agn_pipe/bin/activate
+
+
+%post
+
+    apt update
+    apt upgrade -y
+    apt install curl bash git gcc btop emacs python3 python3-pip python3.12-venv -y
+
+
+    python3 -m venv /opt/agn_pipe
+    . /opt/agn_pipe/bin/activate
+    pip install iminuit cmasher pip papermill matplotlib pip "jupyterlab==4.0.12"  notebook ipykernel ipython ipywidgets
+
+
+    # Install gamma-tools
+    cd /opt/agn_pipe
+    pip install .
+
+    #mamba clean -a --yes
+    python -m pip cache purge
+
+
+%runscript
+    cd /local_data ; jupyter-lab --port=$JPORT
+
+%startscript
+
+%test
+    echo 1
+
+%labels
+    Author obriens
+    Version v0.1.0
+
+%help
+    This is a container with juptyer lab pre-installed with gammapy and agn_pipe
