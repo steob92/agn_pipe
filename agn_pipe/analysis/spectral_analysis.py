@@ -52,7 +52,8 @@ class SpectralAnalysis:
         """
         Initializes the SpectralAnalysis object.
 
-        Args:
+        Parameters:
+        -----------
             datastore_name : The name of the datastore.
             ra : The right ascension of the source in degrees.
             dec : The declination of the source in degrees.
@@ -63,6 +64,7 @@ class SpectralAnalysis:
             scratch_path : The scratch path for the analysis. If None, a unique path will be generated.
 
         Returns:
+        --------
             None
         """
 
@@ -87,10 +89,12 @@ class SpectralAnalysis:
         """
         Sets up datastore and analysis paths
 
-        Args:
+        Parameters:
+        -----------
             None
 
         Returns:
+        --------
             None
         """
         self.setup_datastore()
@@ -102,10 +106,12 @@ class SpectralAnalysis:
 
         Creates a datastore from the inital directory passed. Gets the observation indices and observations.
 
-        Args:
+        Parameters:
+        -----------
             None
 
         Returns:
+        --------
             Noce
         """
         self.datastore = DataStore.from_dir(self.datastore_name)
@@ -125,10 +131,12 @@ class SpectralAnalysis:
 
         Queries known stars and gamma-ray sources within the FoV.
 
-        Args:
+        Parameters:
+        -----------
             None
 
         Returns:
+        --------
             None
         """
         excl = get_exclusion_regions(self.ra, self.dec)
@@ -162,10 +170,12 @@ class SpectralAnalysis:
 
         Creates required axes, geometries and dataset makers. This uses reflected region backgorund maker.
 
-        Args:
+        Parameters:
+        -----------
             None
 
         Returns:
+        --------
             None
 
         """
@@ -225,7 +235,8 @@ class SpectralAnalysis:
         """
         Sets up the spectral model for the analysis.
 
-        Args:
+        Parameters:
+        -----------
             model_type : The type of the spectral model. Can be "pwl" (power law), "lp" or "logpar" or "logparbola" (log parabola),
                                     "expcut" or "cutoff" or "expontntial cutoff" (exponential cutoff). Defaults to "pwl".
             model_name : The name of the model. If None, the source name will be used.
@@ -234,6 +245,7 @@ class SpectralAnalysis:
             ValueError: If the model_type is not found in the incorporated models.
 
         Returns:
+        --------
             None
         """
 
@@ -282,9 +294,11 @@ class SpectralAnalysis:
 
         The method runs the fit on the stacked dataset and then updates the models of the datasets with the results of the fit.
 
-        Args:
+        Parameters:
+        -----------
             None
         Returns:
+        --------
             SkyModel: A copy of the sky model after the fit.
 
         """
@@ -300,12 +314,14 @@ class SpectralAnalysis:
         """
         Estimates the flux points of the fitted model.
 
-        Args:
+        Parameters:
+        -----------
             e_min : The minimum energy for the flux points in TeV. Defaults to 0.1.
             e_max : The maximum energy for the flux points in TeV. Defaults to 10.
             n_bins : The number of energy bins for the flux points. Defaults to 10.
 
         Returns:
+        --------
             FluxPoints: The estimated flux points.
         """
         energy_edges = np.geomspace(e_min, e_max, n_bins) * u.TeV
@@ -325,12 +341,14 @@ class SpectralAnalysis:
         """
         Runs a light curve estimation.
 
-        Args:
+        Parameters:
+        -----------
             duration (float): The duration of each time bin for the light curve in days.
             tstart (Optional[Time]): The start time for the light curve. If None, the start time of the analysis will be used.
             tstop (Optional[Time]): The stop time for the light curve. If None, the stop time of the analysis will be used.
 
         Returns:
+        --------
             LightCurve: The estimated light curve.
         """
         if tstart is None:
