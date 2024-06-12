@@ -46,7 +46,7 @@ class SpectralAnalysis:
         source_name: str,
         tstart: Union[Time, str, None] = None,
         tstop: Union[Time, str, None] = None,
-        base_path: Optional[str] = "./analysis",
+        base_path: Optional[str] = "./analysis/",
         scratch_path: Optional[str] = None,
     ):
         """
