@@ -83,7 +83,9 @@ def get_change_points(tab: Table, threshold: Optional[float] = 0.005) -> List[in
         change_point = None
         for i in range(last_change_point, n_obs):
             # Get the variablity index and probability for this block
-            ts_var, ndf = get_variability_index(tab[last_change_point : i + 1])
+            ts_var, ndf, _flux, _flux_errl, _flux_erru = get_variability_index(
+                tab[last_change_point : i + 1]
+            )
             prob = get_variability_probability(ts_var, ndf)
 
             # Check if the block shows variability

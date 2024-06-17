@@ -128,8 +128,9 @@ class SpectralAnalysis:
         )
 
         required_irf = "point-like" if self.point_like else "full enclosure"
-        self.observations = self.datastore.get_observations(self.obs_ids, 
-                                                            required_irf=required_irf)
+        self.observations = self.datastore.get_observations(
+            self.obs_ids, required_irf=required_irf
+        )
 
     def setup_fov(self):
         """
@@ -207,7 +208,7 @@ class SpectralAnalysis:
         )
 
         countainment_correction = False if self.point_like else True
-        use_region_center = True if self.point_like else False,
+        use_region_center = (True if self.point_like else False,)
 
         dataset_maker = SpectrumDatasetMaker(
             containment_correction=countainment_correction,
@@ -312,7 +313,7 @@ class SpectralAnalysis:
         Parameters:
         -----------
             None
-            
+
         Returns:
         --------
             SkyModel: A copy of the sky model after the fit.
