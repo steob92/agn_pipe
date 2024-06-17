@@ -48,6 +48,7 @@ class SpectralAnalysis:
         tstop: Union[Time, str, None] = None,
         base_path: Optional[str] = "./analysis/",
         scratch_path: Optional[str] = None,
+        point_like: bool = True,
     ):
         """
         Initializes the SpectralAnalysis object.
@@ -62,6 +63,7 @@ class SpectralAnalysis:
             tstop : The stop time for the analysis. Can be an astropy Time object, a string, or None.
             base_path : The base path for the analysis. Defaults to "./analysis".
             scratch_path : The scratch path for the analysis. If None, a unique path will be generated.
+            point_like : If the source is point-like. Defaults to True.
 
         Returns:
         --------
@@ -76,6 +78,7 @@ class SpectralAnalysis:
         self.tstart = tstart
         self.tstop = tstop
         self.model_name = None
+        self.point_like = point_like
 
         if scratch_path is None:
             self.scratch_path = Path("./" + base_path + str(uuid.uuid4()))
@@ -123,7 +126,10 @@ class SpectralAnalysis:
             self.tstart,
             self.tstop,
         )
-        self.observations = self.datastore.get_observations(self.obs_ids)
+
+        required_irf = "point-like" if self.point_like else "full enclosure"
+        self.observations = self.datastore.get_observations(self.obs_ids, 
+                                                            required_irf=required_irf)
 
     def setup_fov(self):
         """
@@ -183,7 +189,7 @@ class SpectralAnalysis:
             ra=self.ra, dec=self.dec, unit="deg", frame="icrs"
         )
         self.on_region = CircleSkyRegion(
-            center=self.target_position, radius=Angle("0.089 deg")
+            center=self.target_position, radius=Angle("0.08944272 deg")
         )
 
         self.setup_fov()
@@ -200,10 +206,13 @@ class SpectralAnalysis:
             geom=geom, energy_axis_true=energy_axis_true
         )
 
+        countainment_correction = False if self.point_like else True
+        use_region_center = True if self.point_like else False,
+
         dataset_maker = SpectrumDatasetMaker(
-            containment_correction=True,
+            containment_correction=countainment_correction,
             selection=["counts", "exposure", "edisp"],
-            use_region_center=False,
+            use_region_center=use_region_center,
         )
         bkg_maker = ReflectedRegionsBackgroundMaker(exclusion_mask=self.exclusion_mask)
         safe_mask_masker = SafeMaskMaker(
@@ -260,6 +269,12 @@ class SpectralAnalysis:
                 index=2,
                 reference=1 * u.TeV,
             )
+
+            spectral_model.parameters["index"].min = 1.0
+            spectral_model.parameters["index"].max = 5.0
+            spectral_model.parameters["amplitude"].min = 1e-19
+            spectral_model.parameters["amplitude"].max = 1e-6
+
         elif model_type.lower() in logparabola_models:
             spectral_model = LogParabolaSpectralModel(
                 amplitude=1e-12 * u.Unit("cm-2 s-1 TeV-1"),
@@ -297,6 +312,7 @@ class SpectralAnalysis:
         Parameters:
         -----------
             None
+            
         Returns:
         --------
             SkyModel: A copy of the sky model after the fit.
@@ -337,6 +353,8 @@ class SpectralAnalysis:
         duration: float,
         tstart: (Optional[Time]) = None,
         tstop: (Optional[Time]) = None,
+        e_min: float = 0.1,
+        e_max: float = 30,
     ) -> FluxPoints:
         """
         Runs a light curve estimation.
@@ -346,6 +364,8 @@ class SpectralAnalysis:
             duration (float): The duration of each time bin for the light curve in days.
             tstart (Optional[Time]): The start time for the light curve. If None, the start time of the analysis will be used.
             tstop (Optional[Time]): The stop time for the light curve. If None, the stop time of the analysis will be used.
+            e_min (float): The minimum energy for the light curve in TeV. Defaults to 0.1 TeV.
+            e_max (float): The maximum energy for the light curve in TeV. Defaults to 30 TeV.
 
         Returns:
         --------
@@ -366,7 +386,7 @@ class SpectralAnalysis:
 
         lc_maker_1d = LightCurveEstimator(
             time_intervals=time_intervals,
-            energy_edges=[0.1, 30] * u.TeV,
+            energy_edges=[e_min, e_max] * u.TeV,
             source=self.source_name,
             reoptimize=False,
             selection_optional="all",
