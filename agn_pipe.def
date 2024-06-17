@@ -8,7 +8,7 @@ Stage: build
 
 %files
     # Temporay build files
-    ../agn_pipe /opt/agn_pipe
+    ../agn_pipe /opt/build
 
 %environment
     # Port for jupyter lab
@@ -22,20 +22,23 @@ Stage: build
     apt upgrade -y
     apt install curl bash git gcc btop emacs python3 python3-pip python3.12-venv -y
 
+     
 
     python3 -m venv /opt/agn_pipe
     . /opt/agn_pipe/bin/activate
-    pip install iminuit cmasher pip papermill matplotlib pip "jupyterlab==4.0.12"  notebook ipykernel ipython ipywidgets
+    pip install iminuit cmasher pip setuptools papermill matplotlib pip "jupyterlab==4.0.12"  notebook ipykernel ipython ipywidgets
 
 
     # Install gamma-tools
-    cd /opt/agn_pipe
+    cd /opt/build
     pip install .
-
+    cd 
+    rm /opt/build -r
+    
     #mamba clean -a --yes
     python -m pip cache purge
 
-
+    
 %runscript
     cd /local_data ; jupyter-lab --port=$JPORT
 
