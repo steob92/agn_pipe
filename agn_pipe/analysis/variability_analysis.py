@@ -77,15 +77,15 @@ def get_change_points(tab: Table, threshold: Optional[float] = 0.005) -> List[in
     n_obs = len(tab)
     last_change_point = 0
     change_points = [0]
-
+    probs = []
+    last_prob = 0
     while last_change_point < n_obs:
 
         change_point = None
         for i in range(last_change_point, n_obs):
             # Get the variablity index and probability for this block
-            ts_var, ndf, _flux, _flux_errl, _flux_erru = get_variability_index(
-                tab[last_change_point : i + 1]
-            )
+            # ts_var, ndf, _flux, _flux_errl, _flux_erru = get_variability_index(
+            ts_var, ndf = get_variability_index(tab[last_change_point : i + 1])
             prob = get_variability_probability(ts_var, ndf)
 
             # Check if the block shows variability
@@ -93,12 +93,14 @@ def get_change_points(tab: Table, threshold: Optional[float] = 0.005) -> List[in
                 change_points.append(i)
                 change_point = i
                 last_change_point = i
+                probs.append(last_prob)
                 break
-
+            last_prob = prob
         # If no change point is found, break the loop
         # This should happen for a constant source or at the end of the light curve
         if change_point is None:
             break
 
+    probs.append(last_prob)
     change_points.append(n_obs - 1)
-    return change_points
+    return change_points, probs

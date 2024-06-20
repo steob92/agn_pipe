@@ -28,12 +28,14 @@ import numpy as np
 import astropy.units as u
 from astropy.coordinates import Angle, SkyCoord
 from regions import CircleSkyRegion
+from astropy.io import fits
+
 
 import uuid
 from pathlib import Path
 from ..query import get_exclusion_regions, query_datastore
 from astropy.time import Time
-from typing import Union, Optional
+from typing import Union, Optional, List
 from math import ceil
 
 
@@ -81,7 +83,7 @@ class SpectralAnalysis:
         self.point_like = point_like
 
         if scratch_path is None:
-            self.scratch_path = Path("./" + base_path + str(uuid.uuid4()))
+            self.scratch_path = Path(base_path + str(uuid.uuid4()))
         else:
             self.scratch_path = Path(base_path + scratch_path)
 
@@ -394,3 +396,54 @@ class SpectralAnalysis:
         )
         self.lc_1d = lc_maker_1d.run(self.datasets)
         return self.lc_1d
+
+    def summarize_results(
+        self,
+        time_scales: Optional[List[float]] = None,
+        fname: str = "results.fits",
+        e_min: float = 0.1,
+        e_max: float = 30,
+    ) -> None:
+        """
+        Summarizes the results of the analysis.
+
+        Parameters:
+        -----------
+            time_scales: List of time scales for the light curve. Defaults to None.
+            fname: str, optional, default "results.fits", the name of the output file.
+            e_min: float, optional, default 0.1, minimum energy [TeV] for the flux points
+            e_max: float, optional, default 30, maximum energy [TeV] for the flux points
+
+        Returns:
+        --------
+            None
+        """
+
+        hdu_list = [fits.PrimaryHDU()]
+        titles = ["PRIMARY"]
+
+        # 1 info table
+        hdu_list.append(fits.BinTableHDU(self.info_table))
+        titles.append("INFO")
+        # 2 model
+        hdu_list.append(fits.BinTableHDU(self.model.parameters.to_table()))
+        titles.append("MODEL")
+        # 3 Spectral points
+        hdu_list.append(fits.BinTableHDU(self.flux_points.to_table()))
+        titles.append("FLUX_POINTS")
+        # 4 Light curves
+
+        for time_scale in time_scales:
+            try:
+                lc = self.run_lightcurve(time_scale, e_min=e_min, e_max=e_max)
+                hdu_list.append(fits.BinTableHDU(lc.to_table(format="lightcurve")))
+                titles.append(f"LIGHTCURVE_{time_scale}")
+            except:
+                print(f"Light curve for time scale {time_scale} failed.")
+
+        hdul = fits.HDUList(hdu_list)
+        for i, title in enumerate(titles):
+            hdul[i].header["EXTNAME"] = title
+            hdul[i].name = title
+
+        hdul.writeto(self.scratch_path.joinpath(fname), overwrite=True)
