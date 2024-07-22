@@ -31,7 +31,7 @@ Stage: build
 
 
     # Install gamma-tools
-    cd /opt/build
+    cd /opt/build/agn_pipe
     pip install .
     cd
     rm /opt/build -r
