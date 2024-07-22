@@ -35,7 +35,8 @@ import uuid
 from pathlib import Path
 from ..query import get_exclusion_regions, query_datastore
 from astropy.time import Time
-from typing import Union, Optional, List
+from astropy.io import fits
+from typing import Union, Optional
 from math import ceil
 
 
@@ -82,11 +83,16 @@ class SpectralAnalysis:
         self.model_name = None
         self.point_like = point_like
 
+        self.e_min = 0.1
+        self.e_max = 30
+
         if scratch_path is None:
             self.scratch_path = Path(base_path + str(uuid.uuid4()))
         else:
+            print ("Scratch path is set")
             self.scratch_path = Path(base_path + scratch_path)
 
+        print ("Writing to ", self.scratch_path)
         self.scratch_path.mkdir(exist_ok=True)
         self.aeff_max = 10.0
 
@@ -191,40 +197,51 @@ class SpectralAnalysis:
         self.target_position = SkyCoord(
             ra=self.ra, dec=self.dec, unit="deg", frame="icrs"
         )
-        self.on_region = CircleSkyRegion(
-            center=self.target_position, radius=Angle("0.08944272 deg")
-        )
 
         self.setup_fov()
 
         energy_axis = MapAxis.from_energy_bounds(
-            0.1, 40, nbin=10, per_decade=True, unit="TeV", name="energy"
+            self.e_min, self.e_max, nbin=10, per_decade=True, unit="TeV", name="energy"
         )
         energy_axis_true = MapAxis.from_energy_bounds(
             0.05, 100, nbin=20, per_decade=True, unit="TeV", name="energy_true"
         )
 
-        geom = RegionGeom.create(region=self.on_region, axes=[energy_axis])
-        dataset_empty = SpectrumDataset.create(
-            geom=geom, energy_axis_true=energy_axis_true
-        )
-
-        countainment_correction = False if self.point_like else True
-        use_region_center = (True if self.point_like else False,)
-
-        dataset_maker = SpectrumDatasetMaker(
-            containment_correction=countainment_correction,
-            selection=["counts", "exposure", "edisp"],
-            use_region_center=use_region_center,
-        )
-        bkg_maker = ReflectedRegionsBackgroundMaker(exclusion_mask=self.exclusion_mask)
-        safe_mask_masker = SafeMaskMaker(
-            methods=["aeff-max"], aeff_percent=self.aeff_max
-        )
-
         self.datasets = Datasets()
 
+        # Loop over the observations
         for obs_id, observation in zip(self.obs_ids, self.observations):
+
+            # Define the on region using rad_max from the observation
+            if self.point_like:
+                self.on_region = CircleSkyRegion(
+                    center=self.target_position, radius=Angle(observation.rad_max.data[0][0] * u.deg)
+                )
+            # Otherwise use a fixed radius
+            else:
+                self.on_region = CircleSkyRegion(
+                    center=self.target_position, radius=Angle("0.08944272 deg")
+                )
+
+            geom = RegionGeom.create(region=self.on_region, axes=[energy_axis])
+            dataset_empty = SpectrumDataset.create(
+                geom=geom, energy_axis_true=energy_axis_true
+            )
+
+            countainment_correction = False if self.point_like else True
+            use_region_center = (True if self.point_like else False,)
+
+            dataset_maker = SpectrumDatasetMaker(
+                containment_correction=countainment_correction,
+                selection=["counts", "exposure", "edisp"],
+                use_region_center=use_region_center,
+            )
+            bkg_maker = ReflectedRegionsBackgroundMaker(exclusion_mask=self.exclusion_mask)
+            safe_mask_masker = SafeMaskMaker(
+                methods=["aeff-max"], aeff_percent=self.aeff_max
+            )
+
+
             dataset = dataset_maker.run(
                 dataset_empty.copy(name=str(obs_id)), observation
             )
@@ -324,7 +341,7 @@ class SpectralAnalysis:
         fit = Fit()
         fit.run(datasets=self.dataset_stacked)
         self.datasets.models = self.dataset_stacked.models.copy()
-
+        self.model_best = self.dataset_stacked.models.copy()
         return self.dataset_stacked.models.copy()
 
     def get_spectral_points(
@@ -356,8 +373,8 @@ class SpectralAnalysis:
         duration: float,
         tstart: (Optional[Time]) = None,
         tstop: (Optional[Time]) = None,
-        e_min: float = 0.1,
-        e_max: float = 30,
+        e_min: Optional[float] = None,
+        e_max: Optional[float] = None,
     ) -> FluxPoints:
         """
         Runs a light curve estimation.
@@ -378,6 +395,10 @@ class SpectralAnalysis:
             tstart = self.tstart
         if tstop is None:
             tstop = self.tstop
+        if e_min is None:
+            e_min =  self.e_min
+        if e_max is None:
+            e_max = self.e_max
 
         t0 = tstart.mjd
         n_time_bins = ceil((tstop.mjd - tstart.mjd) / duration)
@@ -387,13 +408,21 @@ class SpectralAnalysis:
             for _tstart, _tstop in zip(times[:-1], times[1:])
         ]
 
+        norm = {
+            "scan_min" : 0.01, 
+            "scan_max" : 100,
+            "scan_n_values" : 500
+        }
+
         lc_maker_1d = LightCurveEstimator(
             time_intervals=time_intervals,
             energy_edges=[e_min, e_max] * u.TeV,
             source=self.source_name,
             reoptimize=False,
             selection_optional="all",
+            norm=norm
         )
+        self.datasets.models = self.model_best
         self.lc_1d = lc_maker_1d.run(self.datasets)
         return self.lc_1d
 

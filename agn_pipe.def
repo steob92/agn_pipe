@@ -8,7 +8,8 @@ Stage: build
 
 %files
     # Temporay build files
-    ../agn_pipe /opt/build
+    ./agn_pipe /opt/build/agn_pipe/agn_pipe
+    ./pyproject.toml /opt/build/agn_pipe
 
 %environment
     # Port for jupyter lab
