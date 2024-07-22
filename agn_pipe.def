@@ -8,9 +8,12 @@ Stage: build
 
 %files
     # Temporay build files
+    
+    ./pyproject.toml /opt/build/agn_pipe/pyproject.toml
     ./agn_pipe /opt/build/agn_pipe/agn_pipe
-    ./pyproject.toml /opt/build/agn_pipe
-
+    # Need to add the .git folder for build tools to see
+    ./.git /opt/build/agn_pipe/.git
+    
 %environment
     # Port for jupyter lab
     export JPORT=8000

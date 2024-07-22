@@ -9,7 +9,7 @@ packages=[
     "agn_pipe"]
 
 [tool.setuptools.package-data]
-agn_pip = ["*.fits"]
+agn_pipe = ["*.fits"]
 
 [tool.setuptools_scm]
 write_to = "agn_pipe/__version__.py"
