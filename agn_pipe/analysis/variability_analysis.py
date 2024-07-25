@@ -257,4 +257,47 @@ def get_edges(tab_lc : Table) -> Tuple[np.ndarray, np.ndarray, List[List[int]]]:
     edges.append([0, len(tab_lc)-1])
     
     # Reverse the dof 
-    return likelihood, dof[::-1], edges    
+    return likelihood, dof[::-1], edges
+
+
+
+def get_optimal_binning(tab_lc : Table, method : Optional[str] = "aic" ) -> Tuple[int, List[int]]:
+    """Get the optimal model for the light curves.
+    
+    Parameters:
+    -----------
+    tab_lc: astropy Table of light curve measurements
+    method: str, optional, default "aic", method to use for model selection
+    
+    Returns:
+    --------
+    opt_binning: List of integers, optimal binning of the light curves
+    likelihood: float, likelihood of the optimal model
+    
+    """
+
+    # Get the edges
+    likelihood, dof, edges = get_edges(tab_lc)
+
+    # Get the AIC and BIC
+    bic = np.array([ nb * np.log(len(tab_lc)) + likelihood[-nb] for nb in dof])
+    aic = np.array([ 2 * nb + likelihood[-nb] for nb in dof])
+    
+    method = method.lower()
+    if method == "aic":
+        # Get the optimal model
+        opt_edges = np.argmin(aic)
+
+    elif method == "bic":
+        # Get the optimal model
+        opt_edges = np.argmin(bic)
+
+    opt_binning = edges[opt_edges]
+
+    # Make sure the last edge is the last data point
+    if opt_binning[-1] != len(tab_lc)-1:
+        opt_binning.append(len(tab_lc)-1)
+
+    # Get the likelihood of the optimal model
+
+    return opt_binning, likelihood[opt_edges]
