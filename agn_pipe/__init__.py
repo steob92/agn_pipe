@@ -8,4 +8,5 @@ __all__ = [
     "get_change_points",
     "get_variability_index",
     "get_variability_probability",
+    "get_optimal_binning",
 ]
