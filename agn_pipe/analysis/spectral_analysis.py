@@ -36,7 +36,7 @@ from pathlib import Path
 from ..query import get_exclusion_regions, query_datastore
 from astropy.time import Time
 from astropy.io import fits
-from typing import Union, Optional
+from typing import Union, Optional, List
 from math import ceil
 
 
