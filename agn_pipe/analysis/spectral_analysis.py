@@ -52,6 +52,7 @@ class SpectralAnalysis:
         base_path: Optional[str] = "./analysis/",
         scratch_path: Optional[str] = None,
         point_like: bool = True,
+        obs_ids: Optional[List[int]] = None,
     ):
         """
         Initializes the SpectralAnalysis object.
@@ -67,6 +68,7 @@ class SpectralAnalysis:
             base_path : The base path for the analysis. Defaults to "./analysis".
             scratch_path : The scratch path for the analysis. If None, a unique path will be generated.
             point_like : If the source is point-like. Defaults to True.
+            obs_ids : The observation ids to use. If None, the observations will be queried.
 
         Returns:
         --------
@@ -82,7 +84,7 @@ class SpectralAnalysis:
         self.tstop = tstop
         self.model_name = None
         self.point_like = point_like
-
+        self.obs_ids = obs_ids
         self.e_min = 0.1
         self.e_max = 30
 
@@ -126,16 +128,17 @@ class SpectralAnalysis:
             Noce
         """
         self.datastore = DataStore.from_dir(self.datastore_name)
-        self.obs_ids = query_datastore(
-            self.datastore_name,
-            self.ra,
-            self.dec,
-            self.search_cone,
-            self.tstart,
-            self.tstop,
-        )
+        if self.obs_ids is None:
+            self.obs_ids = query_datastore(
+                self.datastore_name,
+                self.ra,
+                self.dec,
+                self.search_cone,
+                self.tstart,
+                self.tstop,
+            )
 
-        required_irf = "point-like" if self.point_like else "full enclosure"
+        required_irf = "point-like" if self.point_like else "full-enclosure"
         self.observations = self.datastore.get_observations(
             self.obs_ids, required_irf=required_irf
         )

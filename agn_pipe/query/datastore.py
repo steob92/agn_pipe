@@ -11,6 +11,7 @@ def query_datastore(
     search_cone: Union[str, u.Quantity, float] = 1.5,
     tstart: Union[Time, str, None] = None,
     tstop: Union[Time, str, None] = None,
+    ele_limit: Union[float, None] = None,
 ) -> list[int]:
     """Query Data Store to get observations matching search criteria
 
@@ -24,6 +25,7 @@ def query_datastore(
                       If a float is specified then the units is assumed to be degrees
         tstart  : Start time of the search query. Defaults to None, no start time
         tstop   : Stop time of the search query. Defaults to None, no stop time
+        ele_limit : Elevation limit for the observations. Defaults to None, no limit
 
     Returns:
         list of observation ids
@@ -50,6 +52,9 @@ def query_datastore(
         (data["RA_OBJ"] - ra) ** 2 + (data["DEC_OBJ"] - dec) ** 2
         < search_cone.value**2
     ]
+
+    if ele_limit is not None:
+        data = data[data["ALT_PNT"] > ele_limit]
 
     # Todo, some checks on times
     if tstart is not None:

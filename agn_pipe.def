@@ -33,7 +33,7 @@ Stage: build
     pip install iminuit cmasher pip setuptools papermill matplotlib pip "jupyterlab==4.0.12"  notebook ipykernel ipython ipywidgets
 
 
-    # Install gamma-tools
+    # Install agn_pipe
     cd /opt/build/agn_pipe
     pip install .
     cd
